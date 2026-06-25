@@ -68,7 +68,7 @@ include(FetchContent)
 FetchContent_Declare(
     cantrip
     GIT_REPOSITORY https://github.com/duckling747/cantrip.git
-    GIT_TAG        v1.0.5
+    GIT_TAG        v0.0.7
 )
 FetchContent_MakeAvailable(cantrip)
 
