@@ -1,3 +1,12 @@
+/*
+ * cantrip
+ * Arena-backed HTML builder
+ *
+ * Copyright (c) 2026 Arttu Mykkänen
+ * Licensed under the MPL-2.0 License (see LICENSE file).
+ * If a copy of the MPL was not distributed with this file,
+ * You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
 #pragma once
 
 #include <string>
@@ -8,10 +17,15 @@
 #include <array>
 
 
+#ifndef CANTRIP_ARENA_SIZE
+#define CANTRIP_ARENA_SIZE (128 * 1024)
+#endif
+
+
 namespace cantrip
 {
     using string = std::pmr::string;
-    inline thread_local std::array<std::byte, 128 * 1024> arena_buffer;
+    inline thread_local std::array<std::byte, CANTRIP_ARENA_SIZE> arena_buffer;
     inline thread_local std::pmr::monotonic_buffer_resource arena_resource(
         arena_buffer.data(),
         arena_buffer.size(),
@@ -49,13 +63,21 @@ namespace cantrip
 
         explicit Result(string&& doc) : pmr_doc(std::move(doc)) {}
 
-        operator std::string() {
+        operator std::string() && {
             std::string final_html(pmr_doc.data(), pmr_doc.size());
             arena_resource.release();
             return final_html;
         }
     };
 
+    /// Builds a complete HTML document.
+    ///
+    /// Lifetime:
+    /// - All intermediate `cantrip::string` values are allocated from a
+    ///   thread-local monotonic arena.
+    /// - They remain valid only until the returned `Result` is converted to
+    ///   `std::string`.
+    /// - Do not retain or use `cantrip::string` values after finalization.
     inline Result doctype(std::string_view v = "html") {
         return Result("<!DOCTYPE " + string(v, &arena_resource) + ">");
     }
